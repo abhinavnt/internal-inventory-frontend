@@ -1,7 +1,11 @@
 "use client";
 
-import { LoginPage } from "@/components/auth/login-page";
+import { LoginForm } from "@/components/auth/LoginForm";
 
-export default function Login() {
-  return <LoginPage />;
+export default function LoginPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <LoginForm />
+    </div>
+  );
 }
