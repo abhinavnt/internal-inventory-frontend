@@ -1,198 +1,148 @@
-import { checkAuthStatus, loginUser, registerUser, resendOtpUser, verifyOtpUser } from "@/services/authServices";
-import { User } from "@/types/user";
-import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
-import axios from "axios";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { login, refreshAuth, logout } from "@/services/authServices";
 
-// STATE INTERFACE
-export interface AuthState {
-  isAuthenticated: boolean;
-  user: User | null;
-  error: string | null;
-  status: "idle" | "loading" | "succeeded" | "failed";
-  accessToken: string | null;
-  authChecked: boolean;
+/**
+ * USER TYPE
+ * Adjust fields if backend adds more later
+ */
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: "admin";
 }
 
-// API URL
-const apiUrl = process.env.NEXT_PUBLIC_API_URL as string;
+/**
+ * AUTH STATE
+ */
+interface AuthState {
+  user: User | null;
+  accessToken: string | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  authChecked: boolean;
+  error: string | null;
+}
 
-// ASYNC THUNKS
-export const registerUserThunk = createAsyncThunk(
-  "auth/register",
-  async (data: { identifier: string; password: string; name?: string; dob?: string; city?: string; genres?: string[] }, { rejectWithValue }) => {
-    try {
-      await registerUser(data);
-      return { identifier: data.identifier };
-    } catch (error: unknown) {
-      console.log(error);
-      return rejectWithValue("Registration failed");
-    }
-  }
-);
+/**
+ * INITIAL STATE
+ */
+const initialState: AuthState = {
+  user: null,
+  accessToken: null,
+  isAuthenticated: false,
+  loading: false,
+  authChecked: false,
+  error: null,
+};
 
-//  Login thunk
-export const loginUserThunk = createAsyncThunk(
-  "auth/login",
-  async (data: { identifier: string; password: string }, { rejectWithValue, dispatch }) => {
-    try {
-      const response = await loginUser(data);
-      dispatch(setCredentials({ user: response.user, accessToken: response.accessToken }));
-      return response;
-    } catch (error: unknown) {
-      console.log(error);
-      
-      return rejectWithValue("Login failed");
-    }
-  }
-);
-
-//  Verify OTP thunk
-export const verifyOtpUserThunk = createAsyncThunk(
-  "auth/verifyOtp",
-  async (data: { identifier: string; otp: string }, { rejectWithValue, dispatch }) => {
-    try {
-      const response = await verifyOtpUser(data);
-      dispatch(setCredentials({ user: response.user, accessToken: response.accessToken }));
-      return response;
-    } catch (error: unknown) {
-      console.log(error);
-      console.log(error);
-      return rejectWithValue("OTP verification failed");
-    }
-  }
-);
-
-// Initialize auth thunk (checks refresh token on load)
-export const initializeAuthThunk = createAsyncThunk("auth/initialize", async (_, { rejectWithValue, dispatch }) => {
+/**
+ * LOGIN
+ */
+export const loginThunk = createAsyncThunk("auth/login", async (data: { email: string; password: string }, { rejectWithValue }) => {
   try {
-    const response = await checkAuthStatus();
-    dispatch(setCredentials({ user: response.user, accessToken: response.accessToken }));
-    return response;
-  } catch (error: unknown) {
-    console.log(error);
+    return await login(data);
+  } catch  {
+    return rejectWithValue("Invalid email or password");
+  }
+});
+
+/**
+ * INITIALIZE AUTH (REFRESH TOKEN ON APP LOAD)
+ */
+export const initializeAuth = createAsyncThunk("auth/initialize", async (_, { rejectWithValue }) => {
+  try {
+    return await refreshAuth();
+  } catch  {
     return rejectWithValue(null);
   }
 });
 
-//  Resend OTP thunk
-export const resendOtpUserThunk = createAsyncThunk("auth/resendOtp", async (data: { identifier: string }, { rejectWithValue }) => {
+/**
+ * LOGOUT
+ */
+export const logoutThunk = createAsyncThunk("auth/logout", async (_, { rejectWithValue }) => {
   try {
-    const response = await resendOtpUser(data);
-    return response;
-  } catch (error: unknown) {
-    console.log(error);
-    return rejectWithValue("Resend OTP failed");
+    await logout();
+  } catch  {
+    return rejectWithValue("Logout failed");
   }
 });
 
-// Refresh Token
-export const refreshAuthToken = createAsyncThunk("auth/refresh-token", async (_, { rejectWithValue }) => {
-  try {
-    const response = await axios.post(`${apiUrl}/api/auth/refresh-token`, null, {
-      withCredentials: true,
-    });
-    return response.data;
-  } catch (error) {
-    console.log(error);
-    return rejectWithValue("Failed to refresh token");
-  }
-});
-
-// Logout
-export const logoutUser = createAsyncThunk("auth/logoutUser", async (_, { rejectWithValue }) => {
-  try {
-    await axios.post(`${apiUrl}/api/auth/logout`, null, { withCredentials: true });
-  } catch (error) {
-    console.error("Failed to log out:", error);
-    return rejectWithValue("Failed to log out");
-  }
-});
-
-// INITIAL STATE
-const initialState: AuthState = {
-  user: null,
-  isAuthenticated: false,
-  accessToken: null,
-  error: null,
-  status: "idle",
-  authChecked: false,
-};
-
-// SLICE
+/**
+ * AUTH SLICE
+ */
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setCredentials: (state, action: PayloadAction<{ user: User; accessToken: string }>) => {
-      state.status = "succeeded";
-      state.user = action.payload.user;
-      state.accessToken = action.payload.accessToken;
-      state.isAuthenticated = true;
-    },
-    updateUser: (state, action: PayloadAction<{ user: User }>) => {
-      state.user = action.payload.user;
-    },
-    updateToken: (state, action: PayloadAction<string>) => {
+    /**
+     * Used by axios interceptor when refresh happens
+     */
+    setToken: (state, action: PayloadAction<string>) => {
       state.accessToken = action.payload;
     },
-    clearUser: (state) => {
-      state.isAuthenticated = false;
+
+    /**
+     * Hard clear (optional)
+     */
+    clearAuth: (state) => {
       state.user = null;
       state.accessToken = null;
+      state.isAuthenticated = false;
+      state.authChecked = true;
+      state.loading = false;
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(registerUserThunk.pending, (state) => {
-        state.status = "loading";
+      /* ---------------- LOGIN ---------------- */
+      .addCase(loginThunk.pending, (state) => {
+        state.loading = true;
         state.error = null;
       })
-      .addCase(registerUserThunk.fulfilled, (state) => {
-        state.status = "succeeded";
-      })
-      .addCase(registerUserThunk.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload as string;
-      })
-      .addCase(loginUserThunk.pending, (state) => {
-        state.status = "loading";
-        state.error = null;
-      })
-      .addCase(loginUserThunk.fulfilled, (state) => {
-        state.status = "succeeded";
-        state.isAuthenticated = true;
-      })
-      .addCase(loginUserThunk.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload as string;
-      })
-      .addCase(verifyOtpUserThunk.fulfilled, (state) => {
-        state.status = "succeeded";
-        state.isAuthenticated = true;
-      })
-      .addCase(resendOtpUserThunk.fulfilled, (state) => {
-        state.status = "succeeded";
-      })
-      //  Handle initialization
-      .addCase(initializeAuthThunk.fulfilled, (state) => {
-        state.authChecked = true;
-        state.isAuthenticated = true;
-      })
-      .addCase(initializeAuthThunk.rejected, (state) => {
-        state.authChecked = true;
-        state.isAuthenticated = false;
-      })
-      .addCase(refreshAuthToken.fulfilled, (state, action) => {
-        state.accessToken = action.payload.accessToken;
+      .addCase(loginThunk.fulfilled, (state, action) => {
+        state.loading = false;
         state.user = action.payload.user;
+        state.accessToken = action.payload.accessToken;
+        state.isAuthenticated = true;
       })
-      .addCase(logoutUser.fulfilled, (state) => {
+      .addCase(loginThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
         state.isAuthenticated = false;
+      })
+
+      /* -------- INITIALIZE AUTH (REFRESH) -------- */
+      .addCase(initializeAuth.pending, (state) => {
+        state.loading = true;
+        state.authChecked = false;
+      })
+      .addCase(initializeAuth.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.accessToken = action.payload.accessToken;
+        state.isAuthenticated = true;
+        state.authChecked = true;
+      })
+      .addCase(initializeAuth.rejected, (state) => {
+        state.loading = false;
         state.user = null;
         state.accessToken = null;
+        state.isAuthenticated = false;
+        state.authChecked = true; // 🔥 VERY IMPORTANT
+      })
+
+      /* ---------------- LOGOUT ---------------- */
+      .addCase(logoutThunk.fulfilled, (state) => {
+        state.user = null;
+        state.accessToken = null;
+        state.isAuthenticated = false;
+        state.authChecked = true;
       });
   },
 });
 
-export const { setCredentials, clearUser, updateUser, updateToken } = authSlice.actions;
+export const { setToken, clearAuth } = authSlice.actions;
 export default authSlice.reducer;
