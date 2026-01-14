@@ -43,6 +43,9 @@ export function Navbar() {
           <Link href="/expenses" className="hover:text-white">
             Expenses
           </Link>
+          <Link href="/activity-logs" className="hover:text-white">
+            activity-logs
+          </Link>
           <Button variant="destructive" size="sm" onClick={logout}>
             Logout
           </Button>
@@ -60,6 +63,9 @@ export function Navbar() {
           </Link>
           <Link href="/expenses" className="block text-gray-200" onClick={() => setOpen(false)}>
             Expenses
+          </Link>
+          <Link href="/activity-logs" className="block text-gray-200" onClick={() => setOpen(false)}>
+            activity-logs
           </Link>
 
           <Button variant="destructive" size="sm" className="w-full" onClick={logout}>
