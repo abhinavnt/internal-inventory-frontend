@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -20,18 +19,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    if (!authChecked) return;
-
-    if (!isAuthenticated) {
-      router.replace("/login");
-      return;
-    }
-
-    loadDashboard();
-  }, [authChecked, isAuthenticated]);
-
-  const loadDashboard = async (): Promise<void> => {
+  const loadDashboard = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       const res = await fetchDashboard();
@@ -41,7 +29,18 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!authChecked) return;
+
+    if (!isAuthenticated) {
+      router.replace("/login");
+      return;
+    }
+
+    loadDashboard();
+  }, [authChecked, isAuthenticated, router, loadDashboard]);
 
   if (!authChecked || loading || !data) {
     return <div className="p-4">Loading...</div>;

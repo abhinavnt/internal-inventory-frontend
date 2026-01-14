@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { fetchExpenses, ExpenseItem } from "@/services/expense.service";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,13 +11,10 @@ export default function ExpensePage() {
   const [data, setData] = useState<ExpenseItem[]>([]);
   const [page, setPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
+
   const limit = 10;
 
-  useEffect(() => {
-    load();
-  }, [page]);
-
-  const load = async (): Promise<void> => {
+  const load = useCallback(async (): Promise<void> => {
     try {
       const res = await fetchExpenses(page, limit);
       setData(res.data);
@@ -25,7 +22,11 @@ export default function ExpensePage() {
     } catch {
       toast.error("Failed to load expenses");
     }
-  };
+  }, [page]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -57,7 +58,7 @@ export default function ExpensePage() {
             ))}
           </div>
 
-          {/* 🖥️ DESKTOP / TABLET VIEW */}
+          {/* 🖥️ DESKTOP VIEW */}
           <div className="hidden sm:block">
             <Table>
               <TableHeader>

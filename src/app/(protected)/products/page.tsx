@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchProducts } from "@/services/product.service";
+import { fetchProducts, Product } from "@/services/product.service";
 import { ProductCard } from "@/components/product/ProductCard";
 import { toast } from "sonner";
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

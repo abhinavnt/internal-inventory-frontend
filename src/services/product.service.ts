@@ -14,7 +14,7 @@ export interface CreateProductPayload {
 }
 
 export interface Product {
-  _id: string;
+  id: string;
   name: string;
   code: string;
   stock: number;

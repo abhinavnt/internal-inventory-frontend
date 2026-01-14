@@ -1,7 +1,6 @@
 // ✅ CHANGED (pagination-safe)
 
 import axiosInstance from "./axiosInstance";
-import { Sale } from "@/types/sale";
 
 export const fetchSalesByProduct = async (
   productId: string,

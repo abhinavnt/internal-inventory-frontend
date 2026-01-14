@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { fetchActivityLogs, ActivityLogItem } from "@/services/activity-log.service";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,13 +11,10 @@ export default function ActivityLogPage() {
   const [data, setData] = useState<ActivityLogItem[]>([]);
   const [page, setPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
+
   const limit = 10;
 
-  useEffect(() => {
-    load();
-  }, [page]);
-
-  const load = async (): Promise<void> => {
+  const load = useCallback(async (): Promise<void> => {
     try {
       const res = await fetchActivityLogs(page, limit);
       setData(res.data);
@@ -25,7 +22,11 @@ export default function ActivityLogPage() {
     } catch {
       toast.error("Failed to load activity logs");
     }
-  };
+  }, [page]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -37,7 +38,7 @@ export default function ActivityLogPage() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* 📱 MOBILE VIEW (DEFAULT) */}
+          {/* 📱 MOBILE VIEW */}
           <div className="space-y-3 sm:hidden">
             {data.map((log) => (
               <div key={log.id} className="rounded-lg bg-[#1E2226] p-3 space-y-1">
@@ -58,7 +59,7 @@ export default function ActivityLogPage() {
             ))}
           </div>
 
-          {/* 🖥️ DESKTOP / TABLET VIEW */}
+          {/* 🖥️ DESKTOP VIEW */}
           <div className="hidden sm:block">
             <Table>
               <TableHeader>

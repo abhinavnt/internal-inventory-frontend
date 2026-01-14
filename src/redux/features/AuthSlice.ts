@@ -42,7 +42,7 @@ const initialState: AuthState = {
 export const loginThunk = createAsyncThunk("auth/login", async (data: { email: string; password: string }, { rejectWithValue }) => {
   try {
     return await login(data);
-  } catch (error) {
+  } catch  {
     return rejectWithValue("Invalid email or password");
   }
 });
@@ -53,7 +53,7 @@ export const loginThunk = createAsyncThunk("auth/login", async (data: { email: s
 export const initializeAuth = createAsyncThunk("auth/initialize", async (_, { rejectWithValue }) => {
   try {
     return await refreshAuth();
-  } catch (error) {
+  } catch  {
     return rejectWithValue(null);
   }
 });
@@ -64,7 +64,7 @@ export const initializeAuth = createAsyncThunk("auth/initialize", async (_, { re
 export const logoutThunk = createAsyncThunk("auth/logout", async (_, { rejectWithValue }) => {
   try {
     await logout();
-  } catch (error) {
+  } catch  {
     return rejectWithValue("Logout failed");
   }
 });

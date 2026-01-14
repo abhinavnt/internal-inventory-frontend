@@ -69,7 +69,7 @@ export function AddSaleModal({ open, onClose, productId, onSuccess }: AddSaleMod
       toast.success("Sale added successfully");
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch  {
       toast.error("Failed to add sale");
     } finally {
       setLoading(false);
