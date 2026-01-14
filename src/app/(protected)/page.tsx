@@ -1,18 +1,24 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+
 import { useAuth } from "@/hooks/useAuth";
 import { fetchDashboard } from "@/services/dashboard.service";
-import { toast } from "sonner";
 import { DashboardCards } from "@/components/dashboard/DashboardCards";
 import { DashboardLists } from "@/components/dashboard/DashboardLists";
+import { CapitalHistoryCard } from "@/components/dashboard/CapitalHistoryCard";
+
+import { DashboardData } from "@/types/dashboard";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { isAuthenticated, authChecked } = useAuth();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     if (!authChecked) return;
@@ -25,7 +31,7 @@ export default function DashboardPage() {
     loadDashboard();
   }, [authChecked, isAuthenticated]);
 
-  const loadDashboard = async () => {
+  const loadDashboard = async (): Promise<void> => {
     try {
       setLoading(true);
       const res = await fetchDashboard();
@@ -37,15 +43,19 @@ export default function DashboardPage() {
     }
   };
 
-  if (!authChecked || loading) {
+  if (!authChecked || loading || !data) {
     return <div className="p-4">Loading...</div>;
   }
 
   return (
     <main className="p-4 space-y-6 max-w-7xl mx-auto">
       <h1 className="text-xl font-semibold">Dashboard</h1>
+
       <DashboardCards data={data} />
+
       <DashboardLists data={data} />
+
+      <CapitalHistoryCard history={data.capitalHistory} />
     </main>
   );
 }
